@@ -6,7 +6,6 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 /**
  * Created by HS East Robotics on 9/13/2018.
  */
-
 public class Chassis6Wheel extends Hardware {
 
     public DcMotor  leftDrive   = null;
@@ -25,4 +24,6 @@ public class Chassis6Wheel extends Hardware {
         leftDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         rightDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
     }
+
+
 }
