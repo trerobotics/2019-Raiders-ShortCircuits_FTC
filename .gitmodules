@@ -1,0 +1,3 @@
+[submodule "TeamCode/HOMAR-FTC-Library"]
+	path = TeamCode/HOMAR-FTC-Library
+	url = https://github.com/StPaulAcademy/HOMAR-FTC-Library
