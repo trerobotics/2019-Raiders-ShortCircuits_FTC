@@ -6,10 +6,15 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 /**
  * Created by HS East Robotics on 9/13/2018.
  */
-public class Chassis6Wheel extends Hardware {
+public class Chassis6Wheel {
 
     public DcMotor  leftDrive   = null;
     public DcMotor  rightDrive  = null;
+
+    public Chassis6Wheel()
+    {
+
+    }
 
     public void init (HardwareMap hwMap){
         leftDrive  = hwMap.get(DcMotor.class,"left_drive");

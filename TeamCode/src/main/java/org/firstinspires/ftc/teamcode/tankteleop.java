@@ -37,7 +37,7 @@ public class tankteleop extends OpMode {
 
     @Override
     public void init() {
-        DcMotor left = hardwareMap.get(DcMotor.class, "driveLeft");
+        DcMotor left = hardwareMap.get(DcMotor.class, "driveLeftFront");
         DcMotor right = hardwareMap.get(DcMotor.class, "driveRight");
         right.setDirection(DcMotor.Direction.REVERSE);
         drivetrain = new TankDrivetrain(left, right);
