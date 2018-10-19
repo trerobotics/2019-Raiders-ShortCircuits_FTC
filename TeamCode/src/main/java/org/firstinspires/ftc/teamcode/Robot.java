@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.HardwareDevice;
 import com.qualcomm.robotcore.hardware.HardwareMap;
@@ -38,6 +39,7 @@ public class Robot
      * Motors for arm and intake
      */
     public MotorActivator intake = null;
+    public DcMotor intakeMotor = null;
     public DcMotor armAngle = null;
     public DcMotor armExtension = null;
     public DcMotor armHeight = null;
@@ -96,11 +98,15 @@ public class Robot
         driveTrainLeftMotors = new DcMotor[]{leftBackDrive, leftFrontDrive};
         driveTrainRightMotors = new DcMotor[]{rightBackDrive, rightFrontDrive};
 
+        leftBackDrive.setDirection(DcMotorSimple.Direction.REVERSE);
 
-        intake = hwMap.get(MotorActivator.class, "intake");
+        //intake = new MotorActivator(intakeMotor, 1);
+        intakeMotor = hwMap.get(DcMotor.class, "intake");
         armAngle = hwMap.get(DcMotor.class, "arm_angle");
         armExtension = hwMap.get(DcMotor.class, "arm_extension");
         armHeight = hwMap.get(DcMotor.class, "arm_height");
+
+        armAngle.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
 
         pidRotate = new PIDController(.0005,0,0);
@@ -141,11 +147,10 @@ public class Robot
      */
     public void drive(double yIn, double xIn)
     {
-        for(int i = 0; i < 2; i++)
-        {
-            driveTrainRightMotors[i].setPower(yIn + xIn);
-            driveTrainLeftMotors[i].setPower(yIn - xIn);
-        }
+
+        leftBackDrive.setPower(yIn + xIn);
+        rightBackDrive.setPower(yIn - xIn);
+
     }
 
     /*
@@ -284,6 +289,11 @@ public class Robot
 
             armHeight.setPower(0);
         }
+    }
+
+    public void armPower(double power)
+    {
+        armAngle.setPower(power);
     }
 
     public void changeExtension(ToggleBoolean toggleExtension)
