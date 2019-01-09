@@ -8,6 +8,7 @@ import com.qualcomm.robotcore.hardware.HardwareDevice;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
+import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
@@ -44,11 +45,16 @@ public class Robot
     public DcMotor armExtension = null;
     public DcMotor armHeight = null;
 
+    // Robot constants
+    private final float P_COEF = .01f;
+    private final float SLOW_SPEED_SCALE = .3f;
+    private float maxSpeed = 1f;
+
     /*
      * Arrays for encoder values.
      * Array[0] is smaller, Array[1] is the larger.
      */
-    private int[] armHeightPos = new int[]{0, 2000};
+    public int[] armHeightPos = new int[]{0, 2000};
     private int[] armExtensionPos = new int[]{0, 800};
 
     /*
@@ -74,7 +80,7 @@ public class Robot
     /*
      * Imu variables
      */
-    private BNO055IMU imu = null;
+    public BNO055IMU imu = null;
     Orientation lastAngles = new Orientation();
     double globalAngle, power = .30, correction;
 
@@ -90,10 +96,9 @@ public class Robot
 
     public void init()
     {
-        //leftFrontDrive = hwMap.get(DcMotor.class, "left_front");
+        leftFrontDrive = hwMap.get(DcMotor.class, "left_front");
         leftBackDrive = hwMap.get(DcMotor.class, "left_back");
-        //
-        // rightFrontDrive = hwMap.get(DcMotor.class, "right_front");
+        rightFrontDrive = hwMap.get(DcMotor.class, "right_front");
         rightBackDrive = hwMap.get(DcMotor.class, "right_back");
         driveTrainLeftMotors = new DcMotor[]{leftBackDrive, leftFrontDrive};
         driveTrainRightMotors = new DcMotor[]{rightBackDrive, rightFrontDrive};
@@ -114,6 +119,7 @@ public class Robot
         drivetrain = new TankDrivetrain(leftBackDrive, rightBackDrive);
 
         BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
+
         parameters.mode                = BNO055IMU.SensorMode.IMU;
         parameters.angleUnit           = BNO055IMU.AngleUnit.DEGREES;
         parameters.accelUnit           = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
@@ -142,24 +148,67 @@ public class Robot
         return (Math.abs(a) > Math.abs(b)) ? a : b;
     }
 
-    /*
-     * Not using the HOMAR library. This is primarily used for autonomous.
-     */
-    public void drive(double yIn, double xIn)
+    // makes the robot move. Takes in three axis for movement, a boolean for whether the robot should keep its
+    // current heading, and a boolean for whether the robot should be slowed down
+    public void drive(float xInput, float yInput, float zInput, boolean keepheading, boolean slowRobot)
     {
+        boolean isRobotSlow = false;
 
-        leftBackDrive.setPower(yIn + xIn);
-        rightBackDrive.setPower(yIn - xIn);
+        if(slowRobot)
+        {
+            isRobotSlow = !isRobotSlow;
+
+        }
+
+        float slowSpeedMultiplier;
+        if(isRobotSlow) {
+            slowSpeedMultiplier = SLOW_SPEED_SCALE;
+        } else
+        {
+            slowSpeedMultiplier = 1;
+        }
+
+        double steer = imu.getError(0) * P_COEF;
+
+        if(keepheading)
+        {
+            rightFrontDrive.setPower(Range.clip(yInput - xInput - (zInput + steer), -maxSpeed, maxSpeed));
+            leftFrontDrive.setPower(Range.clip(yInput + xInput + (zInput + steer), -maxSpeed, maxSpeed));
+            rightBackDrive.setPower(Range.clip(yInput + xInput - (zInput + steer), -maxSpeed, maxSpeed));
+            leftBackDrive.setPower(Range.clip(yInput - xInput + (zInput + steer), -maxSpeed, maxSpeed));
+
+
+        } else
+        {
+            rightFrontDrive.setPower((Range.clip(yInput - xInput - zInput, -maxSpeed, maxSpeed)) * slowSpeedMultiplier);
+            leftFrontDrive.setPower((Range.clip(yInput + xInput + zInput, -maxSpeed, maxSpeed)) * slowSpeedMultiplier);
+            rightBackDrive.setPower((Range.clip(yInput + xInput - zInput, -maxSpeed, maxSpeed)) * slowSpeedMultiplier);
+            leftBackDrive.setPower((Range.clip(yInput - xInput + zInput, -maxSpeed, maxSpeed)) * slowSpeedMultiplier);
+        }
+
 
     }
 
-    /*
-     * Using the HOMAR library. Testing things.
-     */
-    public void drive(Gamepad gamepad1)
+    // makes the robot move. Takes in three axis for movement, and a boolean for whether the robot should keep its
+    // current heading. WIthOUT SLOW SPEED. USED FOR STUFF LIKE AUTONOMOUS.
+    public void drive(float xInput, float yInput, float zInput, boolean keepheading)
     {
-        drivetrain.setVelocity(absMax(-gamepad1.left_stick_y, -gamepad1.right_stick_y));
-        drivetrain.setRotation(absMax(gamepad1.left_stick_x, gamepad1.right_stick_x));
+
+        double steer = imu.getError(0) * P_COEF;
+
+        if(keepheading)
+        {
+            rightFrontDrive.setPower(Range.clip(yInput - xInput - (zInput + steer), -maxSpeed, maxSpeed));
+            leftFrontDrive.setPower(Range.clip(yInput + xInput + (zInput + steer), -maxSpeed, maxSpeed));
+            rightBackDrive.setPower(Range.clip(yInput + xInput - (zInput + steer), -maxSpeed, maxSpeed));
+            leftBackDrive.setPower(Range.clip(yInput - xInput + (zInput + steer), -maxSpeed, maxSpeed));
+        } else
+        {
+            rightFrontDrive.setPower(Range.clip(yInput - xInput - zInput, -maxSpeed, maxSpeed));
+            leftFrontDrive.setPower(Range.clip(yInput + xInput + zInput, -maxSpeed, maxSpeed));
+            rightBackDrive.setPower(Range.clip(yInput + xInput - zInput, -maxSpeed, maxSpeed));
+            leftBackDrive.setPower(Range.clip(yInput - xInput + zInput, -maxSpeed, maxSpeed));
+        }
     }
 
 
@@ -196,13 +245,12 @@ public class Robot
 
         if(angle < Math.abs(Math.round(getAngle()) + 2))
         {
-            drive(0,pidRotate.output());
-        } else if (angle > Math.abs(Math.round(getAngle()) + 2))
-        {
-            drive(0,-pidRotate.output());
+            drive(0, 0,(float)pidRotate.output(), false);
+        } else if (angle > Math.abs(Math.round(getAngle()) + 2)) {
+            drive(0, 0, (float) -pidRotate.output(), false);
         } else
         {
-            drive(0,0);
+            drive(0,0, 0, false);
         }
     }
 
@@ -279,11 +327,11 @@ public class Robot
             armHeight.setPower(0);
 
         } else {
-            armHeight.setTargetPosition(armHeightPos[0]);
+        armHeight.setTargetPosition(armHeightPos[0]);
 
-            armHeight.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        armHeight.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 
-            armHeight.setPower(-armHeightPower);
+        armHeight.setPower(-armHeightPower);
 
             while(armHeight.isBusy()) {}
 
@@ -293,7 +341,9 @@ public class Robot
 
     public void armPower(double power)
     {
-        armAngle.setPower(power);
+        armAngle.setPower(Range.clip(power, -.9
+                 ,.9
+        ));
     }
 
     public void changeExtension(ToggleBoolean toggleExtension)
